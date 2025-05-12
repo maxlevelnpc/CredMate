@@ -5,7 +5,7 @@
 <h1 align="center">CredMate</h1>
 
 <p align="center">
-  **CredMate** is a tiny GUI tool built with PySide6 to help you manage your **Windows Credential Manager** easily.
+  <b>CredMate</b> is a tiny GUI tool built with PySide6 to help you manage your <b>Windows Credential Manager</b> easily.
 </p>
 
 ## Preview
