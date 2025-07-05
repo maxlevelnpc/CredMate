@@ -1,0 +1,107 @@
+/*
+ * Custom widget style
+ */
+
+
+QLabel#appAbout {
+    color: #cccccc;
+    background-color: #1f2333;
+    border-radius: 8px;
+    padding: 12px 16px;
+    max-width: 300px;
+}
+
+QLabel#titleLabel {
+    background-color: transparent;
+    font-size: 24px;
+    color: #d8d8d8;
+}
+
+QPushButton#transButton {
+    background-color: transparent;
+}
+QLabel#transLabel {
+    background-color: transparent;
+    padding: 0px;
+}
+QPushButton#backButton {
+    background-color: transparent;
+    color: #cbcccf;
+    font-size: 26px;
+    border-radius: 6px;
+    text-align: left;
+}
+QPushButton#backButton:hover {
+    color: #ffffff;
+}
+
+
+QPushButton#appButton[style="normal"] {
+    background-color: #262b3c;
+    border-radius: 6px;
+    text-align: center;
+    padding: 8px 12px;
+}
+QPushButton#appButton[style="normal"]:hover {
+    background-color: #31364a;
+}
+QPushButton#appButton[style="normal"]:pressed {
+    background-color: #1f2333;
+}
+
+QPushButton#appButton[style="save"] {
+    background-color: #3c9bcc;
+}
+QPushButton#appButton[style="save"]:hover {
+    background-color: #54a3cc;
+}
+
+QPushButton#appButton[style="delete"] {
+    background-color: #ff4038;
+}
+QPushButton#appButton[style="delete"]:hover {
+    background-color: #ff4d38;
+}
+
+
+QPushButton#menuButton {
+    background-color: #262b3c;
+    border-radius: 6px;
+}
+QPushButton#menuButton:hover {
+    background-color: #31364a;
+}
+QPushButton#menuButton:pressed {
+    background-color: #1f2333;
+}
+QPushButton#menuButton > QLabel#addressLabel {
+    background-color: transparent;
+    font-size: 12px;
+    text-align: left;
+    padding: 0px;
+}
+QPushButton#menuButton > QLabel#dateLabel {
+    background-color: transparent;
+    color: #b9b9b9;
+    font-size: 10px;
+}
+
+
+QLineEdit#editEntry[style="normal"] {
+    background-color: #2c3245;
+    border-radius: 8px;
+    text-align: center;
+    font-size: 12px;
+    padding: 4px;
+}
+QLineEdit#editEntry[style="normal"]:hover {
+    background-color: #2c3245;
+}
+QLineEdit#editEntry[style="edit_mode"] {
+    border: 2px solid #3f7a99;
+    padding: 4px;
+
+}
+QLineEdit#editEntry[style="edit_mode"]:hover {
+    background-color: #32394f;
+}
