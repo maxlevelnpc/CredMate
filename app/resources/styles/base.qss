@@ -1,0 +1,104 @@
+/*
+ * Base style for all widgets
+ */
+
+
+* {
+    color: white;
+    border: none;
+    outline: none;
+    font-family: Segoe UI;
+}
+
+
+QLabel {
+    background: transparent;
+    font-size: 14px;
+}
+
+
+QFrame {
+    background-color: #262b3c;
+    border-radius: 6px;
+    padding: 6px 10px;
+}
+
+
+QWidget {
+    background: #262b3c;
+    border-radius: 4px;
+}
+
+QScrollArea {
+    background: transparent;
+}
+QScrollBar:vertical {
+    background: transparent;
+    width: 16px;
+}
+
+QScrollBar::handle:vertical {
+    background-color: #262b3c;
+    min-height: 24px;
+    border-radius: 4px;
+    width: 8px;
+    margin: 0 4px;
+}
+QScrollBar::handle:vertical:hover {
+    background-color: #5e6a84;
+}
+QScrollBar::add-line:vertical,
+QScrollBar::sub-line:vertical {
+    height: 0;
+    background: none;
+}
+QScrollBar::add-page:vertical,
+QScrollBar::sub-page:vertical {
+    background: none;
+}
+
+QListView {
+    background-color: #1b202e;
+    border:solid 1px solid #3f7a99;
+    selection-background-color: #444;
+    selection-color: white;
+    padding: 2px;
+}
+QListView::item {
+    padding: 6px;
+    border-bottom: none;
+}
+QListView::item:selected {
+    background-color: #262b3c;
+}
+QListView::item:hover {
+    background-color: #262b3c;
+}
+QListView:focus {
+    outline: none;
+    border: none;
+}
+
+
+QToolTip {
+    background-color: #1a2030;
+    font-size: 12px;
+}
+
+QMessageBox {
+    background-color: #1a2031;
+    color: #d8dee9;
+    font-size: 12px;
+    border: none;
+}
+QMessageBox QPushButton {
+    background-color: #262b3c;
+    text-align: left;
+    padding: 8px 12px;
+}
+QMessageBox QPushButton:hover {
+    background-color: #3e4662;
+}
+QMessageBox > QLabel {
+    background-color: transparent;
+}
