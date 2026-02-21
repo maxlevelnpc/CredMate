@@ -15,7 +15,7 @@ class MainView(QMainWindow):
         self.setupUI()
 
     def setupUI(self) -> None:
-        self.setWindowIcon(QIcon(":/app/assets/icons/icon.ico"))
+        self.setWindowIcon(QIcon(":/app/assets/icons/key.ico"))
         self.setMinimumSize(400, 400)
 
         central = QWidget(self)
