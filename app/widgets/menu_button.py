@@ -16,7 +16,7 @@ class Button(QPushButton):
         self.style().polish(self)
 
 
-class ButtonMenu(QPushButton):
+class MenuButton(QPushButton):
     def __init__(self, address, date):
         super().__init__()
         self.address_text = address
@@ -30,8 +30,7 @@ class ButtonMenu(QPushButton):
         layout.setContentsMargins(8, 4, 4, 4)
 
         self.icon_left = QLabel()
-        self.icon_left.setObjectName("transLabel")
-        self.icon_left.setPixmap(QIcon(":/app/resources/icons/key.png").pixmap(14, 14))
+        self.icon_left.setPixmap(QIcon(":/app/assets/icons/key.png").pixmap(14, 14))
 
         self.address_label = QLabel(self._elideText(address))
         self.address_label.setObjectName("addressLabel")

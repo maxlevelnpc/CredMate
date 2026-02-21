@@ -2,223 +2,116 @@ from __future__ import annotations
 import os
 from datetime import datetime
 from typing import TYPE_CHECKING
+import logging
 
 from PySide6.QtCore import Slot
 from PySide6.QtGui import QKeySequence, QShortcut
-from PySide6.QtWidgets import QLineEdit
 
-from app.widgets.buttons import ButtonMenu
-from app.widgets.msgbox import MessageBox
-from app.utils.types import TypedDict, SortType
+from app.widgets import MenuButton, MessageBox
+from app.core.types import SortType, CredentialData
 
 if TYPE_CHECKING:
-    from app.views.main_view import MainView
-    from app.models.credential_model import CredentialModel
+    from app.views import MainView
+    from app.models import CredentialModel
+
+log = logging.getLogger(__name__)
 
 
 class MainPresenter:
-    def __init__(self, model: CredentialModel, ui: MainView):
+    def __init__(self, model: CredentialModel, ui: MainView) -> None:
         self.model = model
         self.ui = ui
 
-        self._last_sort: str = ""
+        self._last_sort: SortType = SortType.AZ
         self._last_query: str = ""
 
-        self.setupLogic()
+        self.setupPresenter()
+        
 
-    def setupLogic(self) -> None:
-        """connect signals and call initializer functions"""
-        self.ui.setWindowTitle(f"Credential Vault ({os.getlogin()})")
+    def setupPresenter(self) -> None:
 
-        creds, ot_creds = self.model.service.get_credentials()
-        self.model.misc_credentials = ot_creds
-        self.model.generic_credentials = creds
+        # APP SHORTCUTS
+        HKEY_pwd_visibility = QShortcut(QKeySequence("Ctrl+Shift+P"), self.ui)
+        HKEY_pwd_visibility.activated.connect(self.ui.password_visibility)
 
+        # Load Windows Credentials before evrything else
+        self.model.load_credentials()
+
+        # Connect signals
         self.ui.add_cred_btn.clicked.connect(self.on_new_credential_click)
         self.ui.copy_btn.clicked.connect(self.ui.password.copy_password)
-        self.ui.search_bar.app_settings.clicked.connect(lambda: self.ui.root_container.slideToIndex(3))
-        self.ui.search_bar.sort_modified.clicked.connect(lambda: self.show_sorted_result("last_modified"))
-        self.ui.search_bar.sort_az.clicked.connect(lambda: self.show_sorted_result("az"))
+        self.ui.search_bar.app_settings.clicked.connect(self.open_settings)
+        self.ui.search_bar.sort_modified.triggered.connect(lambda: self.show_sorted_result(SortType.Date))
+        self.ui.search_bar.sort_az.triggered.connect(lambda: self.show_sorted_result(SortType.AZ))
         self.ui.search_bar.search_input.returnPressed.connect(self.show_search_result)
-        self.ui.back_btn.clicked.connect(self.back_to_menu)
-        self.ui.about_back_btn.clicked.connect(self.back_to_menu)
-        self.ui.new_back_btn.clicked.connect(self.back_to_menu)
-
         self.ui.edit_btn.clicked.connect(lambda: self.on_edit_mode(set_enable=True))
-        self.ui.cancel_del_btn.clicked.connect(self.delete_credential)
-        self.ui.new_save_btn.clicked.connect(lambda: self.save_credential(new=True))
+        self.ui.cancel_del_btn.clicked.connect(self.on_delete_credential)
+        self.ui.new_save_btn.clicked.connect(lambda: self.on_save_credential(new=True))
+        self.ui.back_btn.clicked.connect(self.ui.back_to_main_menu)
 
+        # Set widgets visibvility
         self.ui.label_empty.setVisible(False)
-        self.ui.credential_container.setVisible(False)
-        self.ui.new_credential_container.setVisible(False)
+        self.ui.cred_info_container.setVisible(False)
+        self.ui.new_cred_container.setVisible(False)
         self.ui.settings_container.setVisible(False)
+        self.ui.back_btn.setVisible(False)
 
-        hk_pwd_visibility = QShortcut(QKeySequence("Ctrl+Shift+P"), self.ui)
-        hk_pwd_visibility.activated.connect(self.password_visibility)
+        # Call initializer functions
+        self.set_window_title()
+        self.display_credentials(query_and_sort_check=False, delete_buttons=False)
+        self.update_search_completer()
 
-        self.display_credentials(init=True)
-        self.set_search_completer()
+        self.ui.apply_shadow(self.ui.search_bar)
+        self.ui.apply_shadow(self.ui.add_cred_btn)
+        self.ui.apply_shadow(self.ui.cred_detail_container)
+        self.ui.apply_shadow(self.ui.new_detail_container)
 
+        self.ui.apply_shadow(self.ui.back_btn)
+        self.ui.apply_shadow(self.ui.edit_btn)
+        self.ui.apply_shadow(self.ui.new_save_btn)
+        self.ui.apply_shadow(self.ui.cancel_del_btn)
 
-    def set_search_completer(self) -> None:
+    def set_window_title(self) -> None:
+        title = os.getlogin()
+        creds = len(self.model.generic_credentials)
+        self.ui.setWindowTitle(f"CREDMATE — {title} ({creds})")
+
+    def update_search_completer(self) -> None:
+        """
+        Add search completer for the searchbar with address names
+        """
         addresses = [cred["address"] for cred in self.model.generic_credentials]
         self.ui.search_bar.setSearchCompleter(addresses)
+        log.debug("Search completer updated. ")
 
     @Slot()
-    def password_visibility(self):
-        n, p = QLineEdit.EchoMode.Normal, QLineEdit.EchoMode.Password
-        pwd, pwd_new = self.ui.password, self.ui.new_password
+    def open_settings(self) -> None:
+        self.ui.root_container.slideToIndex(3)
+        self.ui.show_back_btn()
 
-        pwd.setEchoMode(n) if pwd.echoMode() == p else pwd.setEchoMode(p)
-        pwd_new.setEchoMode(n) if pwd_new.echoMode() == p else pwd_new.setEchoMode(p)
-
-    def _create_credential_buttons(self, credentials):
-        for cred in credentials:
-            address = cred.get("address", "Unknown")
-            modified, _ = cred.get("modified").split(" ")
-            btn = ButtonMenu(address, modified)
-            btn.clicked.connect(lambda _, c=cred: self.on_credential_click(c))
-            self.ui.main_container_layout.addWidget(btn)
-
-    def _delete_credential_buttons(self) -> None:
-        layout = self.ui.main_container_layout
-        for i in reversed(range(layout.count())):
-            item = layout.itemAt(i)
-            widget = item.widget()
-            if widget and isinstance(widget, ButtonMenu):
-                widget.setParent(None)
-                widget.deleteLater()
-
-    def display_credentials(self, query="", sort: SortType = "az", init=False) -> None:
-        filtered_creds = self.model.get_sorted_list(query, sort)
-
-        if not init:
-            if query == self._last_query and sort == self._last_sort:
-                return
-        
-            self._delete_credential_buttons()
-
-        if not filtered_creds:
-            self.ui.label_empty.setVisible(True)
-        else:
-            self.ui.label_empty.setVisible(False)
-            self._create_credential_buttons(filtered_creds)
-
-    def show_sorted_result(self, sort):
-        self.display_credentials(self._last_query, sort)
-
-        self._last_sort = sort
-
-    def show_search_result(self):
-        query = self.ui.search_bar.text()
-        self.display_credentials(query, self._last_sort)
-
-        self._last_query = query
-
-
-    @Slot()
-    def save_credential(self, new=False) -> None:
-        msg = "Are you sure you want to add this new credential?" if new else "Are you sure you want to update this credential?"
-        confirm = MessageBox("Confirm Action", msg)
-        if confirm:
-            address = self.ui.new_address.text() if new else self.ui.address.text()
-            user_name = self.ui.new_user_name.text() if new else self.ui.user_name.text()
-            password = self.ui.new_password.text() if new else self.ui.password.text()
-
-            if not address or not user_name or not password:
-                MessageBox("Error", "Field cannot be empty!", info=True)
-                return
-
-            if new:
-                # check for duplicate address before adding new credential.
-                # also compare with other credentials (non Enterprise ↓)
-                all_creds = self.model.generic_credentials + self.model.misc_credentials
-                for cred in all_creds:
-                    if cred.get("address").lower() == address.lower():
-                        MessageBox(
-                            "Duplicate Credential",
-                            f"A credential with the address '{address}' already exists. Please use a unique name.",
-                            info=True
-                        )
-                        return
-
-            ok, error = self.model.service.add_credential(address, user_name, password, new)
-
-            self.on_edit_mode(set_enable=False)
-
-            date_now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-            new_data = {
-                    "address": address,
-                    "username": user_name,
-                    "password": password,
-                    "modified": date_now
-                }
-
-            if new:
-                self.model.generic_credentials.append(new_data)
-            else:
-                for cred in self.model.generic_credentials:
-                    if cred.get("address").lower() == address.lower():
-                        cred.update(new_data)
-
-            self._delete_credential_buttons()
-            self.display_credentials(init=True)
-            self.set_search_completer()
-
-            if ok:
-                MessageBox("Success", "New Credential Added!" if new else "Credential Updated!", info=True)
-            else:
-                MessageBox("Error", f"Failed to {'save new' if new else 'update'} credential: {error}", info=True)
-
-            if not new:
-                self.ui.modified_date.setText(date_now)
-
-    @Slot()
-    def delete_credential(self) -> None:
-        confirm = MessageBox(
-            "Confirm Deletion",
-            "Are you sure you want to delete this credential?"
-        )
-
-        if confirm:
-            address = self.ui.address.text()
-            ok, error = self.model.service.delete_credential(address)
-
-            for cred in self.model.generic_credentials:
-                if cred["address"] == address:
-                    self.model.generic_credentials.remove(cred)
-
-            self._delete_credential_buttons()
-            self.display_credentials(init=True)
-            self.set_search_completer()
-
-            if ok:
-                MessageBox("Success", "Credentials deleted!", info=True)
-            else:
-                MessageBox("Error", f"Failed to delete `{address}`: {error}", info=True)
-
-            self.back_to_menu()
-
-
-    @Slot()
-    def on_credential_click(self, cred) -> None:
+    @Slot(dict)
+    def on_credential_click(self, credential: CredentialData) -> None:
+        """
+        Show Detail Menu
+        :param cred: Specific credential data to show
+        """
+        # Hide password in case user previously show it without hide it back
+        self.ui.password_visibility(hide=True)
         self.ui.root_container.slideToIndex(1)
 
         if not self.ui.password.isReadOnly():
-            # call this in case if user previously on edit mode and go back to main menu without close it
+            # Disable edit mode in case if user previously on edit mode and go back to main menu without close it
             self.on_edit_mode(set_enable=False)
 
-        address = cred.get("address", "NULL")
-        username = cred.get("username", "Unknown")
-        password = cred.get("password")
-        modified = cred.get("modified")
-        self.ui.address.setText(address)
-        self.ui.user_name.setText(username)
-        self.ui.password.setText(password)
-        self.ui.modified_date.setText(modified)
+        self.ui.update_credential_info(credential)
+        self.ui.show_back_btn()
 
     @Slot()
     def on_new_credential_click(self) -> None:
+        """
+        Open Creation Menu
+        """
+        self.ui.password_visibility(hide=True)
         self.ui.new_address.clear()
         self.ui.new_user_name.clear()
         self.ui.new_password.clear()
@@ -226,18 +119,178 @@ class MainPresenter:
         self.ui.root_container.slideToIndex(2)
         self.ui.new_address.setFocus()
 
-    @Slot()
-    def back_to_menu(self, curr_con) -> None:
-        self.ui.root_container.slideToIndex(0)
+        self.ui.show_back_btn()
 
-    def on_edit_mode(self, set_enable=True):
+    @Slot(bool)
+    def on_edit_mode(self, set_enable: bool = True) -> None:
+        """
+        Update Edit and Delete buttons behaviour
+        :param set_enable: wether to set to normal or edit mode
+        """
         self.ui.edit_mode(set_enable)
 
         if set_enable:
             self.ui.user_name.setFocus()
-            self.ui.edit_btn.clicked.connect(self.save_credential)
+            self.ui.edit_btn.clicked.connect(self.on_save_credential)
             self.ui.cancel_del_btn.clicked.connect(lambda: self.on_edit_mode(set_enable=False))
         else:
-            self.ui.cancel_del_btn.clicked.connect(self.delete_credential)
+            self.ui.cancel_del_btn.clicked.connect(self.on_delete_credential)
             self.ui.edit_btn.clicked.connect(lambda: self.on_edit_mode(set_enable=True))
 
+    def _create_credential_buttons(self, credentials: list[CredentialData]) -> None:
+        for cred in credentials:
+            address = cred.get("address", "Unknown")
+            modified, _ = cred.get("modified").split(" ")
+            btn = MenuButton(address, modified)
+            btn.clicked.connect(lambda _, c=cred: self.on_credential_click(c))
+            self.ui.cred_list_layout.addWidget(btn)
+
+        log.debug("Buttons created.")
+
+    def _delete_credential_buttons(self) -> None:
+        layout = self.ui.cred_list_layout
+        for i in reversed(range(layout.count())):
+            item = layout.itemAt(i)
+            widget = item.widget()
+            if widget and isinstance(widget, MenuButton):
+                widget.setParent(None)
+                widget.deleteLater()
+        
+        log.debug("Buttons deleted.")
+
+    def display_credentials(
+            self, 
+            query: str = "", 
+            sort: SortType = SortType.AZ, 
+            query_and_sort_check: bool = True, 
+            delete_buttons: bool = True
+        ) -> None:
+        """
+        Create credential buttons based on specified query and sort them. Empty string query mean get all
+        
+        :param query: Show credentials contains this query. Empty string query mean get all
+        :param sort: Sort type
+        :param query_and_sort_check: To avoid unecesary button creation. Check if query and sort equal to its last value.
+        :param delete_buttons: Wether to delete all previous buttons before recreate them back
+        """
+        filtered_creds = self.model.get_sorted_list(query, sort)
+
+        if query_and_sort_check:
+            log.debug(f"(1/6) Checking query and sort...")
+            log.debug(f"(2/6) Specified query: {query}\n+ (3/6) Last query: {self._last_query}")
+            log.debug(f"(4/6) Specified sort: {sort}\n+ (5/6) Last sort: {self._last_sort}")
+            if query == self._last_query and sort == self._last_sort:
+                log.debug("(6/6) Query and sort are the same with its last value. Buttons creation CANCELED!\n")
+                return
+            
+            log.debug(f"(6/6) Query and sort are not the same with its last value. Continue buttons creation with specified query `{query}`, and apply sort `{sort}`\n")
+        
+        if delete_buttons:
+            log.debug("(1/1) Deleting buttons...\n")
+            self._delete_credential_buttons()
+
+        if not filtered_creds:
+            self.ui.label_empty.setVisible(True)
+        else:
+            self.ui.label_empty.setVisible(False)
+            log.debug("(1/1) Creating buttons...\n")
+            self._create_credential_buttons(filtered_creds)
+
+    @Slot()
+    def show_sorted_result(self, sort: SortType) -> None:
+        """Show credential based on specified sort type"""
+        self.display_credentials(self._last_query, sort)
+        self._last_sort = sort
+
+    @Slot()
+    def show_search_result(self) -> None:
+        """Show credential based on specified search query"""
+        query = self.ui.search_bar.text()
+        self.display_credentials(query, self._last_sort)
+        self._last_query = query
+
+    @Slot(bool)
+    def on_save_credential(self, new: bool = False) -> None:
+        """
+        Update existing credential in Windows Credentials or add new one.
+        :param new: True to add new credential, False to update exisiting one
+        """
+        address = self.ui.new_address.text() if new else self.ui.address.text()
+        username = self.ui.new_user_name.text() if new else self.ui.user_name.text()
+        password = self.ui.new_password.text() if new else self.ui.password.text()
+
+        if not (address and username and password):
+            MessageBox("Error", "Field cannot be empty!")
+            return
+    
+        confirm = MessageBox(
+            "Confirm Action", 
+            "Are you sure you want to add this new credential?" if new else 
+            "Are you sure you want to update this credential?",
+            False
+        )
+
+        if not confirm:
+            return
+
+        if new:
+            # check for duplicate address before adding new credential.
+            is_exist = self.model.is_exist(address)
+            if is_exist:
+                MessageBox(
+                    "Duplicate Credential",
+                    f"A credential with the address '{address}' already exists. Please use a unique name."
+                )
+                return
+
+        date_now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        cred_data: CredentialData = {
+            "address": address, 
+            "username": username,
+            "password": password,
+            "modified": date_now
+        }
+
+        ok, msg = self.model.save_credential(cred_data, new)
+        if not ok:
+            MessageBox("Error", msg)
+            return
+
+
+        self.ui.modified_date.setText(date_now)
+
+        self.display_credentials(sort=self._last_sort, query_and_sort_check=False)
+        self.update_search_completer()
+        self.on_edit_mode(set_enable=False)
+        self.set_window_title()
+
+        MessageBox("Success", msg)
+
+    @Slot()
+    def on_delete_credential(self) -> None:
+        """
+        Delete creedential in Windows Credentials        
+        """
+        confirm = MessageBox(
+            "Confirm Deletion",
+            "Are you sure you want to delete this credential?",
+            False
+        )
+
+        if not confirm:
+            return
+
+        # delete credential
+        address = self.ui.address.text()
+        ok, msg = self.model.delete_credential(address)
+        if not ok:
+            MessageBox("Error", msg)
+            return
+    
+        self.display_credentials(sort=self._last_sort, query_and_sort_check=False)
+        self.update_search_completer()
+        self.set_window_title()
+
+        MessageBox("Success", msg)
+
+        self.ui.back_to_main_menu()

@@ -1,11 +1,8 @@
-/*
- * Custom widget style
- */
+/* ---------Label------------ */
 
-
-QLabel#appAbout {
+QLabel#aboutLabel {
     color: #cccccc;
-    background-color: #1f2333;
+    background-color: #262b3c;
     border-radius: 8px;
     padding: 12px 16px;
     max-width: 300px;
@@ -17,40 +14,31 @@ QLabel#titleLabel {
     color: #d8d8d8;
 }
 
-QPushButton#transButton {
-    background-color: transparent;
+/* ---------Button------------ */
+
+QPushButton#backBtn {
+    background-color: #262b3c;
+    border-radius: 20px;
 }
-QLabel#transLabel {
-    background-color: transparent;
-    padding: 0px;
-}
-QPushButton#backButton {
-    background-color: transparent;
-    color: #cbcccf;
-    font-size: 26px;
-    border-radius: 6px;
-    text-align: left;
-}
-QPushButton#backButton:hover {
-    color: #ffffff;
+QPushButton#backBtn:hover {
+    background-color: #31364a;
 }
 
 
 QPushButton#appButton[style="normal"] {
     background-color: #262b3c;
     border-radius: 6px;
-    text-align: center;
-    padding: 8px 12px;
+    padding: 8px;
 }
 QPushButton#appButton[style="normal"]:hover {
     background-color: #31364a;
 }
 QPushButton#appButton[style="normal"]:pressed {
-    background-color: #1f2333;
+    background-color: #262b3c;
 }
-
 QPushButton#appButton[style="save"] {
     background-color: #3c9bcc;
+    border-radius: 6px;
 }
 QPushButton#appButton[style="save"]:hover {
     background-color: #54a3cc;
@@ -58,6 +46,7 @@ QPushButton#appButton[style="save"]:hover {
 
 QPushButton#appButton[style="delete"] {
     background-color: #ff4038;
+    border-radius: 6px;
 }
 QPushButton#appButton[style="delete"]:hover {
     background-color: #ff4d38;
@@ -66,13 +55,13 @@ QPushButton#appButton[style="delete"]:hover {
 
 QPushButton#menuButton {
     background-color: #262b3c;
-    border-radius: 6px;
+    border-radius: 4px;
 }
 QPushButton#menuButton:hover {
     background-color: #31364a;
 }
 QPushButton#menuButton:pressed {
-    background-color: #1f2333;
+    background-color: #262b3c;
 }
 QPushButton#menuButton > QLabel#addressLabel {
     background-color: transparent;
@@ -87,21 +76,31 @@ QPushButton#menuButton > QLabel#dateLabel {
 }
 
 
-QLineEdit#editEntry[style="normal"] {
+QPushButton#copyBtn {
+    background-color: #262b3c;
+    border-radius: 6px;
+    padding: 8px;
+}
+QPushButton#copyBtn:hover {
+    background-color: #31364a;
+}
+QPushButton#copyBtn:pressed {
+    background-color: #262b3c;
+}
+/* ---------Entry------------ */
+
+QLineEdit#editEntry[style="normalMode"] {
     background-color: #2c3245;
-    border-radius: 8px;
-    text-align: center;
+    border-radius: 4px;
     font-size: 12px;
     padding: 4px;
 }
-QLineEdit#editEntry[style="normal"]:hover {
-    background-color: #2c3245;
-}
-QLineEdit#editEntry[style="edit_mode"] {
+
+QLineEdit#editEntry[style="editMode"] {
     border: 2px solid #3f7a99;
     padding: 4px;
 
 }
-QLineEdit#editEntry[style="edit_mode"]:hover {
+QLineEdit#editEntry[style="editMode"]:hover {
     background-color: #32394f;
 }

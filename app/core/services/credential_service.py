@@ -1,13 +1,18 @@
 import datetime
-from typing import Union, Optional
+import logging
+from typing import Optional
 
 import pywintypes
 import win32cred
 
+from app.core.types import CredentialData
+
+log = logging.getLogger(__name__)
+
 
 class CredentialService:
-    def get_credentials(self) -> Union[tuple, str]:
-        """:returns: tuple with two list or return error message as string"""
+    def get_windows_credentials(self) -> tuple[Optional[str], tuple]:
+        """:returns: tuple of; None or errpr message and a tuple with two list"""
         try:
             # create two list. other_credentials for later comparison
             other_credentials = []  # local computer, logon session etc.
@@ -40,13 +45,18 @@ class CredentialService:
                     "modified": modified.strftime("%Y-%m-%d %H:%M:%S") if modified else "Unknown"
                 })
 
-            return credential_list, other_credentials
+            return None, (credential_list, other_credentials)
 
         except pywintypes.error as e:
-            return f"Failed to load credentials: {e}"
+            log.error(str(e))
+            return f"Failed to load credentials: {e}", ([], [])
 
-    def add_credential(self, address: str, username: str, password: str, new=False) -> tuple[bool, Optional[str]]:
+    def add_windows_credential(self, cred_data: CredentialData, new=False) -> tuple[bool, Optional[str]]:
         """:return: (True, None) if successful, or (False, error message) on failure."""
+        address = cred_data.get("address")
+        username = cred_data.get("username")
+        password = cred_data.get("password")
+        
         if not new:
             # If updating, ensure the credential exists first.
             # CredRead will raise an error if the given address doesn't exist,
@@ -68,15 +78,17 @@ class CredentialService:
         try:
             win32cred.CredWrite(credential, 0)
         except pywintypes.error as e:
+            log.error(str(e))
             return False, f"Failed to write credential '{address}': {e}"
 
         return True, None
 
-    def delete_credential(self, address: str) -> tuple[bool, Optional[str]]:
+    def delete_windows_credential(self, address: str) -> tuple[bool, Optional[str]]:
         """:return: (True, None) if successful, or (False, error message) on failure."""
         try:
             win32cred.CredDelete(address, win32cred.CRED_TYPE_GENERIC, 0)
             return True, None
         except pywintypes.error as e:
+            log.error(str(e))
             return False, f"Failed to delete credential '{address}': {e}"
 

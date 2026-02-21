@@ -3,8 +3,6 @@ __pycache__/
 .env
 venv/
 .venv/
-build/
-dist/
 
 .vscode/
 .idea/
@@ -14,10 +12,11 @@ desktop.ini
 Thumbs.db
 .DS_Store
 
+*build/
+*dist/
 *.log
-
 .scripts/
 scripts/
-quicknotes.txt
+quicknotes.*
 test.py
-test[1-5].py
+test[1-69].py

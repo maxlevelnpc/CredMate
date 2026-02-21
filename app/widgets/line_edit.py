@@ -4,7 +4,7 @@ from PySide6.QtWidgets import QLineEdit, QApplication
 
 
 class Entry(QLineEdit):
-    def __init__(self, read_only=True, style: Literal["normal", "edit_mode"] = "normal"):
+    def __init__(self, read_only=True, style: Literal["normalMode", "editMode"] = "normalMode"):
         super().__init__()
 
         self.setContentsMargins(0, 0, 0, 0)
@@ -20,7 +20,7 @@ class Entry(QLineEdit):
         super().setText(text)
         self.setCursorPosition(0)
 
-    def updateStyle(self, style: Literal["normal", "edit_mode"]):
+    def updateStyle(self, style: Literal["normalMode", "editMode"]):
         self.setProperty("style", style)
         self.style().unpolish(self)
         self.style().polish(self)
